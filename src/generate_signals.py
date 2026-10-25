@@ -42,6 +42,64 @@ def generate_sine(
 
     return t, signal
 
+def generate_square(
+        frequency: float,
+        amplitude: float = 1.0,
+        phase: float = 0.0,
+        sample_rate: int = 1000,
+        duration: float = 1.0
+):
+    num_samples = int(sample_rate * duration)
+    t = np.arange(num_samples) / sample_rate
+
+    signal = amplitude * np.sign(
+        np.sin(2 * np.pi * frequency * t + phase)
+    )
+
+    return t, signal
+
+def generate_triangle(
+        frequency: float,
+        amplitude: float,
+        phase: float = 0.0,
+        sample_rate: int = 1000,
+        duration: float = 1.0
+):
+    num_samples = int(sample_rate * duration)
+    t = np.arange(num_samples) / sample_rate
+
+    signal = (
+        (2 * amplitude / np.pi)
+        * np.arcsin(
+            np.sin(2 * np.pi * frequency * t + phase)
+        )
+    )
+
+    return t, signal
+
+def generate_multitone(
+        frequencies: list[float],
+        amplitudes: list[float],
+        phases: list[float],
+        sample_rate: int = 1000,
+        duration: float = 1.0
+):
+    num_samples = int(sample_rate * duration)
+    t = np.arange(num_samples) / sample_rate
+
+    signal = np.zeros(num_samples)
+
+    for frequency, amplitude, phase in zip(
+        frequencies,
+        amplitudes,
+        phases
+    ):
+        signal += amplitude * np.sin(
+            2 * np.pi * frequency * t + phase
+        )
+
+    return t, signal
+
 def add_noise(
         signal: np.ndarray,
         snr_db: float 
@@ -82,25 +140,26 @@ def add_noise(
 
 
 if __name__ == "__main__":
-    t, clean_signal = generate_sine(
-        frequency=10,
-        amplitude=2,
-        phase=0,
+
+    t, signal = generate_multitone(
+        frequencies=[10, 30],
+        amplitudes=[1.0, 0.5],
+        phases=[0.0, 0.0],
         sample_rate=1000,
         duration=1
     )
 
     noisy_signal = add_noise(
-        clean_signal,
+        signal,
         snr_db=30
     )
 
-    plt.plot(t, clean_signal, label="Clean")
+    plt.plot(t, signal, label="Clean")
     plt.plot(t, noisy_signal, label="Noisy")
 
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude")
-    plt.title("Clean vs. Noisy 10 Hz Sine Wave")
+    plt.title("Triangle Wave")
     plt.xlim(0, 0.3)
 
     plt.legend()

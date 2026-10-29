@@ -49,6 +49,30 @@ def generate_square(
         sample_rate: int = 1000,
         duration: float = 1.0
 ):
+    """
+    Generate a sampled square wave.
+    
+    Parameters:
+    -----------
+    frequency : float
+        Frequency of the square wave in Hz
+    amplitude : float
+        Amplitude of the square wave
+    phase : float
+        Phase offset in radians
+    sample_rate : int
+        Number of samples per second in Hz
+    duration : float
+        Signal duration in seconds
+        
+    Returns:
+    --------
+    t : np.ndarray
+        Sample times.
+    signal : np.ndarray
+        Signal values at each sample time
+    """
+
     num_samples = int(sample_rate * duration)
     t = np.arange(num_samples) / sample_rate
 
@@ -65,6 +89,30 @@ def generate_triangle(
         sample_rate: int = 1000,
         duration: float = 1.0
 ):
+    """
+    Generate a sampled triangle wave.
+    
+    Parameters:
+    -----------
+    frequency : float
+        Frequency of the triangle wave in Hz
+    amplitude : float
+        Amplitude of the triangle wave
+    phase : float
+        Phase offset in radians
+    sample_rate : int
+        Number of samples per second in Hz
+    duration : float
+        Signal duration in seconds
+        
+    Returns:
+    --------
+    t : np.ndarray
+        Sample times.
+    signal : np.ndarray
+        Signal values at each sample time
+    """
+
     num_samples = int(sample_rate * duration)
     t = np.arange(num_samples) / sample_rate
 
@@ -84,6 +132,29 @@ def generate_multitone(
         sample_rate: int = 1000,
         duration: float = 1.0
 ):
+    """
+    Generate a sampled multitone wave.
+    
+    Parameters:
+    -----------
+    frequency : list[float]
+        Frequencies of the sine waves in Hz
+    amplitude : list[float]
+        Amplitudes of the sine waves
+    phase : list[float]
+        Phase offsets in radians
+    sample_rate : int
+        Number of samples per second in Hz
+    duration : float
+        Signal duration in seconds
+        
+    Returns:
+    --------
+    t : np.ndarray
+        Sample times.
+    signal : np.ndarray
+        Signal values at each sample time
+    """
     num_samples = int(sample_rate * duration)
     t = np.arange(num_samples) / sample_rate
 
@@ -138,30 +209,185 @@ def add_noise(
 
     return noisy_signal
 
+def generate_random_signal(
+    sample_rate: int = 1000,
+    duration: float = 1.0,
+    min_frequency: float = 5.0,
+    max_frequency: float = 100.0,
+    min_amplitude: float = 0.5,
+    max_amplitude: float = 2.0,
+    min_snr: float = -5.0,
+    max_snr: float = 30.0
+):
+    """
+        Generate a random sampled wave from the types: sine, square, triangle, multitone.
+        
+        Parameters:
+        -----------
+        phase : float
+            Phase offset in radians
+        sample_rate : int
+            Number of samples per second in Hz
+        duration : float
+            Signal duration in seconds
+        min_frequency: float
+            Minimum possible value for frequency in Hz
+        max_frequency: float
+            Maximum possible value for frequency in Hz
+        min_amplitude: float
+            Minimum possible value for amplitude
+        max_amplitude: float
+            Maximum possible value for amplitude
+        min_phase: float
+            Minimum possible value for phase
+        max_phase: float
+            Maximum possible value for phase
+        min_snr: float
+            Minimum possible value of SNR
+        max_snr: float
+            Maximum possible vlaue of SNR
+            
+        Returns:
+        --------
+        t : np.ndarray
+            Sample times.
+        signal : np.ndarray
+            Signal values at each sample time
+        """
+    nyquist_frequency = sample_rate / 2
+
+    if max_frequency >= nyquist_frequency:
+        raise ValueError(
+            "max_frequency must be below the Nyquist frequency "
+            f"({nyquist_frequency} Hz)"
+        )
+
+    
+    signal_type = np.random.choice(
+        ["sine", "square", "triangle", "multitone"]
+    )
+
+    frequency = np.random.uniform(
+        min_frequency,
+        max_frequency
+    )
+
+    amplitude = np.random.uniform(
+        min_amplitude,
+        max_amplitude
+    )
+
+    phase = np.random.uniform(
+        0,
+        2 * np.pi
+    )
+
+    snr_db = np.random.uniform(
+        min_snr,
+        max_snr
+    )
+
+    if signal_type == "sine":
+        t, clean_signal = generate_sine(
+            frequency,
+            amplitude,
+            phase,
+            sample_rate,
+            duration
+        )
+
+    elif signal_type == "square":
+        t, clean_signal = generate_square(
+            frequency,
+            amplitude,
+            phase,
+            sample_rate,
+            duration
+        )
+
+    elif signal_type == "triangle":
+        t, clean_signal = generate_triangle(
+            frequency,
+            amplitude,
+            phase,
+            sample_rate,
+            duration
+        )
+
+    else:
+        second_frequency = np.random.uniform(
+            min_frequency,
+            max_frequency
+        )
+
+        second_amplitude = np.random.uniform(
+            min_amplitude,
+            max_amplitude
+        )
+
+        second_phase = np.random.uniform(
+            0,
+            2 * np.pi
+        )
+
+        t, clean_signal = generate_multitone(
+            frequencies=[frequency, second_frequency],
+            amplitudes=[amplitude, second_amplitude],
+            phases=[phase, second_phase],
+            sample_rate=sample_rate,
+            duration=duration
+        )
+
+    noisy_signal = add_noise(
+        clean_signal,
+        snr_db
+    )
+
+    return t, noisy_signal, signal_type
+        
+def generate_dataset(
+        num_samples: int,
+        sample_rate: int = 1000,
+        duration: float = 1.0
+):
+    signals = []
+    labels = []
+
+    for _ in range(num_samples):
+        _, signal, label = generate_random_signal(
+            sample_rate=sample_rate,
+            duration=duration
+        )
+
+        signals.append(signal)
+        labels.append(label)
+
+    return np.array(signals), np.array(labels)
 
 if __name__ == "__main__":
 
-    t, signal = generate_multitone(
-        frequencies=[10, 30],
-        amplitudes=[1.0, 0.5],
-        phases=[0.0, 0.0],
+    # t, signal, label = generate_random_signal()
+
+    # print(f"Signal type: {label}")
+
+    # plt.plot(t, signal)
+
+    # plt.xlabel("Time (s)")
+    # plt.ylabel("Amplitude")
+    # plt.title(f"Random {label.capitalize()} Signal")
+    # plt.xlim(0, 0.3)
+
+    # plt.grid(True)
+    # plt.show()
+
+    X, y = generate_dataset(
+        num_samples=1000,
         sample_rate=1000,
         duration=1
     )
 
-    noisy_signal = add_noise(
-        signal,
-        snr_db=30
-    )
+    print("X shape:", X.shape)
+    print("y shape:", y.shape)
 
-    plt.plot(t, signal, label="Clean")
-    plt.plot(t, noisy_signal, label="Noisy")
-
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude")
-    plt.title("Triangle Wave")
-    plt.xlim(0, 0.3)
-
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    print("\nLables:")
+    print(y)
